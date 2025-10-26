@@ -39,4 +39,4 @@ out/
 ### Kotlin ###
 .kotlin
 
-src/main/resources/firbase-credentials
+/app/src/main/resources/firebase-credentials
