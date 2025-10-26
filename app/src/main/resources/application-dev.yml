@@ -1,0 +1,21 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: update
+  mail:
+    host: smtp.mailgun.org
+    username: chirp@sandbox0d165fc7e8994be58a7aab95f7395611.mailgun.org
+jwt:
+  expiration-minutes: 1000
+nginx:
+  require-proxy: false
+chirp:
+  email:
+    url: "http://localhost:8080"
+  rate-limit:
+    apply-limit: true
+  web-socket:
+    allowed-origins: "http://localhost:8080"
+logging:
+  level:
+    com.gideon.chirp: DEBUG
