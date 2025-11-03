@@ -56,7 +56,7 @@ logger.error("Error initializing Firebase Admin SDK")
              false
         }
     }
-    fun sendNotification(notification: PushNotification) {
+    fun sendNotification(notification: PushNotification): PushNotificationSendResult {
      val messages = notification.recipients.map { recipiant ->
 
         Message.builder()
@@ -99,6 +99,10 @@ logger.error("Error initializing Firebase Admin SDK")
 
      }
         val response = FirebaseMessaging.getInstance().sendEach(messages)
+
+        return response.toSendResult(
+            notification.recipients
+        )
     }
 
     private  fun BatchResponse.toSendResult(
