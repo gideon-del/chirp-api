@@ -2,6 +2,7 @@ package com.gideon.chirp.service
 
 import com.gideon.chirp.api.dto.ChatMessageDto
 import com.gideon.chirp.api.mappers.toChatMessageDto
+import com.gideon.chirp.domain.events.ChatCreatedEvent
 import com.gideon.chirp.domain.events.ChatParticipantLeftEvent
 import com.gideon.chirp.domain.events.ChatParticipantsJoinedEvent
 import com.gideon.chirp.domain.exception.ForbiddenException
@@ -72,13 +73,18 @@ class ChatService(
     val creator = chatParticipantRepository.findByIdOrNull(creatorId)
         ?: throw ChatParticipantNotFoundException(creatorId)
 
-    return chatRepository.save(
+    return chatRepository.saveAndFlush(
         ChatEntity(
             creator= creator,
             participants = setOf(creator) + otherParticipants,
 
         )
-    ).toChat(null)
+    ).toChat(null).also { chat ->
+        applicationEventPublisher.publishEvent(ChatCreatedEvent(
+            chatId = chat.id,
+            participantIds = chat.participants.map { it.userId }
+        ))
+    }
     }
     @Transactional
     fun addParticipantToChat(

@@ -52,7 +52,7 @@ class AuthExceptionHandler {
     )
 
     @ExceptionHandler(EmailNotVerifiedException::class)
-    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
     open fun onEmailNotVerified(e: EmailNotVerifiedException) = mapOf(
         "code" to "EMAIL_NOT_VERIFIED",
         "message" to e.message

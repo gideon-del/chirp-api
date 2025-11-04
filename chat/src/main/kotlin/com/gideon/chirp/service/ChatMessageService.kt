@@ -25,6 +25,7 @@ import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
+import java.util.UUID
 
 @Service
 class ChatMessageService(
@@ -32,7 +33,8 @@ class ChatMessageService(
     private val chatMessageRepository: ChatMessageRepository,
     private val chatParticipantRepository: ChatParticipantRepository,
     private val applicationEventPublisher: ApplicationEventPublisher,
-    private val eventPublisher: EventPublisher
+    private val eventPublisher: EventPublisher,
+    private val messageCacheEvictionHelper: MessageCacheEvictionHelper
 ) {
 
 
@@ -54,7 +56,7 @@ class ChatMessageService(
 
         val savedMessage = chatMessageRepository.saveAndFlush(
             ChatMessageEntity(
-                id = messageId,
+                id = messageId ?: UUID.randomUUID(),
                 content = content.trim(),
                 chatId = chatId,
                 sender = sender
@@ -91,13 +93,7 @@ class ChatMessageService(
                 messageId = message.id!!
             )
         )
-        evictMessagesCache(message.chatId)
+        messageCacheEvictionHelper.evictMessagesCache(message.chatId)
     }
-    @CacheEvict(
-        value = ["messages"],
-        key = "#chatId"
-    )
-    fun evictMessagesCache(chatId: ChatId) {
-        // NO-OP: let's spring handle the cache evict
-    }
+
 }

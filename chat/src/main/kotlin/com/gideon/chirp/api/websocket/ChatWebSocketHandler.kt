@@ -12,6 +12,7 @@ import com.gideon.chirp.api.dto.ws.OutgoingWebSocketMessageType
 import com.gideon.chirp.api.dto.ws.ProfilePictureUpdateDto
 import com.gideon.chirp.api.dto.ws.SendMessageDto
 import com.gideon.chirp.api.mappers.toChatMessageDto
+import com.gideon.chirp.domain.events.ChatCreatedEvent
 import com.gideon.chirp.domain.events.ChatParticipantLeftEvent
 import com.gideon.chirp.domain.events.ChatParticipantsJoinedEvent
 import com.gideon.chirp.domain.events.MessageDeletedEvent
@@ -245,18 +246,20 @@ sendError(
             logger.warn("Couldn't send error message", e)
         }
     }
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    fun onJoinChat(event: ChatParticipantsJoinedEvent){
+    private fun updateChatForUsers(
+        chatId: ChatId,
+        userIds: List<UserId>
+    ) {
         connectionLock.write {
-            event.userIds.forEach { userId ->
+userIds.forEach { userId ->
                 userChatIds.compute(userId) {_, chatIds ->
                     (chatIds ?: mutableSetOf()).apply {
-                        add(event.chatId)
+                        add(chatId)
                     }
                 }
 
                 userToSessions[userId]?.forEach { sessionId ->
-                    chatToSessions.compute(event.chatId) { _, sessions ->
+                    chatToSessions.compute(chatId) { _, sessions ->
                         (sessions ?: mutableSetOf()).apply {
                             add(sessionId)
                         }
@@ -264,6 +267,13 @@ sendError(
                 }
             }
         }
+    }
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    fun onJoinChat(event: ChatParticipantsJoinedEvent){
+    updateChatForUsers(
+        chatId = event.chatId,
+        userIds = event.userIds.toList()
+    )
 
         broadcastToChat(
             chatId = event.chatId,
@@ -276,6 +286,15 @@ sendError(
                 )
             )
         )
+    }
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    fun onChatCreated(event: ChatCreatedEvent){
+       updateChatForUsers(
+           chatId = event.chatId,
+           userIds = event.participantIds
+       )
+
+
     }
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     fun onProfilePictureUpdated(event: ProfilePictureUpdatedEvent) {
